@@ -82,6 +82,9 @@ class Alg1010Solver
     // Soft zero for biquadratic and degenerate cubic detection
     SoftZero<real_type> const soft_zero_;
 
+    // DEBUG: Whether the (currently in-focus) path has been taken.
+    bool imag_path_taken_;
+
     //// HELPER FUNCTIONS ////
 
     inline CELER_FUNCTION real_type
@@ -145,7 +148,7 @@ class Alg1010Solver
 //---------------------------------------------------------------------------//
 
 CELER_FUNCTION Alg1010Solver::Alg1010Solver(real_type tolerance)
-    : soft_zero_{tolerance}
+    : soft_zero_{tolerance}, imag_path_taken_{false}
 {
 }
 
@@ -352,15 +355,14 @@ CELER_FUNCTION real_type Alg1010Solver::calc_err_ldlt(real_type b,
     return sum;
 }
 
-CELER_FUNCTION real_type
-Alg1010Solver::calc_err_abcd_cmplx(real_type a,
-                                   real_type b,
-                                   real_type c,
-                                   real_type d,
-                                   std::complex<real_type> aq,
-                                   std::complex<real_type> bq,
-                                   std::complex<real_type> cq,
-                                   std::complex<real_type> dq) const
+CELER_FUNCTION real_type Alg1010Solver::calc_err_abcd_cmplx(real_type a,
+                                                            real_type b,
+                                                            real_type c,
+                                                            real_type d,
+                                                            cmplx_type aq,
+                                                            cmplx_type bq,
+                                                            cmplx_type cq,
+                                                            cmplx_type dq) const
 {
     /* Eqs. (68) and (69) in the manuscript for complex alpha1 (aq), beta1
      * (bq), alpha2 (cq) and beta2 (dq) */
@@ -421,7 +423,11 @@ CELER_FUNCTION void Alg1010Solver::NRabcd(real_type a,
 {
     /* Newton-Raphson described in sec. 2.3 of the manuscript for complex
      * coefficients a,b,c,d */
-    real_type xold[4], x[4], dx[4], det, Jinv[4][4], fvec[4], vr[4];
+    // real_type xold[4], x[4], dx[4], det, Jinv[4][4], fvec[4], vr[4];
+    Real4 xold, x, dx, fvec, vr;
+    Array<Array<real_type, 4>, 4> Jinv;
+    real_type det;
+
     x[0] = *AQ;
     x[1] = *BQ;
     x[2] = *CQ;
@@ -517,29 +523,26 @@ Alg1010Solver::solve_quadratic(real_type a, real_type b, Comp2& roots) const
         real_type zmax = div / 2;
         real_type zmin = (zmax == 0.0) ? 0.0 : b / zmax;
 
-        roots[0] = std::complex<real_type>(zmax, 0.0);
-        roots[1] = std::complex<real_type>(zmin, 0.0);
+        roots[0] = cmplx_type(zmax, 0.0);
+        roots[1] = cmplx_type(zmin, 0.0);
     }
     else
     {
         real_type sqrtd = std::sqrt(-diskr);
-        roots[0] = std::complex<real_type>(-a / 2, sqrtd / 2);
-        roots[1] = std::complex<real_type>(-a / 2, -sqrtd / 2);
+        roots[0] = cmplx_type(-a / 2, sqrtd / 2);
+        roots[1] = cmplx_type(-a / 2, -sqrtd / 2);
     }
 }
 
 CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
     -> result_type
-
-// void Alg1010Solver::quartic_solver(real_type coeff[5],
-// std::complex<real_type> roots[4])
 {
     Comp4 roots;
 
-    std::complex<real_type> acx, bcx, ccx, dcx;
-    real_type l2m[12], d2m[12], res[12];
-    real_type errv[3], aqv[3], cqv[3];
-    int realcase[2];
+    cmplx_type acx, bcx, ccx, dcx;
+    Array<real_type, 12> l2m, d2m, res;
+    Real3 errv, aqv, cqv;
+    Array<int, 2> realcase;
 
     real_type a = coeff[1] / coeff[0];
     real_type b = coeff[2] / coeff[0];
@@ -708,8 +711,8 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
     {
         /* Case II eqs. (53)-(56) */
         real_type gamma = std::sqrt(d2);
-        acx = std::complex<real_type>(l1, gamma);
-        bcx = std::complex<real_type>(l3, gamma * l2);
+        acx = cmplx_type(l1, gamma);
+        bcx = cmplx_type(l3, gamma * l2);
         ccx = std::conj(acx);
         dcx = std::conj(bcx);
         realcase[0] = 0;
@@ -731,7 +734,7 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
             err0 = Alg1010Solver::calc_err_abcd_cmplx(
                 a, b, c, d, acx, bcx, ccx, dcx);
         real_type aq1, bq1, cq1, dq1;
-        std::complex<real_type> acx1, bcx1, ccx1, dcx1;
+        cmplx_type acx1, bcx1, ccx1, dcx1;
         real_type err1 = 0.0;
         if (d3 <= 0)
         {
@@ -754,7 +757,7 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
             /* complex */
             realcase[1] = 0;
             acx1 = l1;
-            bcx1 = l3 + std::complex<real_type>(0., std::sqrt(d3));
+            bcx1 = l3 + cmplx_type(0., std::sqrt(d3));
             ccx1 = l1;
             dcx1 = std::conj(bcx1);
             err1 = Alg1010Solver::calc_err_abcd_cmplx(
@@ -842,6 +845,13 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
     for (int i = 0; i < 4; i++)
     {
         cmplx_type new_root = roots[i];
+
+        if (soft_zero_(new_root.imag()) && imag_path_taken_)
+        {
+            real_roots[0] = 100;
+            break;
+        }
+
         if (soft_zero_(new_root.imag()) && new_root.real() != no_solution_
             && new_root.real() > 0 && !soft_zero_(new_root.real()))
         {
@@ -849,7 +859,6 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
             ri += 1;
         }
     }
-
     return real_roots;
 }
 
