@@ -83,7 +83,7 @@ class Alg1010Solver
     SoftZero<real_type> const soft_zero_;
 
     // DEBUG: Whether the (currently in-focus) path has been taken.
-    bool imag_path_taken_;
+    // inline static bool imag_path_taken_;
 
     //// HELPER FUNCTIONS ////
 
@@ -148,7 +148,7 @@ class Alg1010Solver
 //---------------------------------------------------------------------------//
 
 CELER_FUNCTION Alg1010Solver::Alg1010Solver(real_type tolerance)
-    : soft_zero_{tolerance}, imag_path_taken_{false}
+    : soft_zero_{tolerance}  //, imag_path_taken_{false}
 {
 }
 
@@ -797,43 +797,43 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
         roots[2] = qroots[0];
         roots[3] = qroots[1];
     }
-    else
-    {
-        /* complex coefficients of p1 and p2 */
-        if (whichcase == 0)
-        {  // d2!=0
-            auto cdiskr = 0.25 * acx * acx - bcx;
-            /* calculate the roots as roots of p1(x) and p2(x) (see end of
-             * sec. 2.1)
-             */
-            auto zx1 = -0.5 * acx + std::sqrt(cdiskr);
-            auto zx2 = -0.5 * acx - std::sqrt(cdiskr);
-            auto zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
-            auto zxmin = bcx / zxmax;
-            roots[0] = zxmin;
-            roots[1] = std::conj(zxmin);
-            roots[2] = zxmax;
-            roots[3] = std::conj(zxmax);
-        }
-        else
-        {  // d2 ~ 0
-            /* never gets here! */
-            auto cdiskr = std::sqrt(acx * acx - 4.0 * bcx);
-            auto zx1 = -0.5 * (acx + cdiskr);
-            auto zx2 = -0.5 * (acx - cdiskr);
-            auto zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
-            auto zxmin = bcx / zxmax;
-            roots[0] = zxmax;
-            roots[1] = zxmin;
-            cdiskr = std::sqrt(ccx * ccx - 4.0 * dcx);
-            zx1 = -0.5 * (ccx + cdiskr);
-            zx2 = -0.5 * (ccx - cdiskr);
-            zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
-            zxmin = dcx / zxmax;
-            roots[2] = zxmax;
-            roots[3] = zxmin;
-        }
-    }
+    // else
+    // {
+    //     /* complex coefficients of p1 and p2 */
+    //     if (whichcase == 0)
+    //     {  // d2!=0
+    //         auto cdiskr = 0.25 * acx * acx - bcx;
+    //         /* calculate the roots as roots of p1(x) and p2(x) (see end of
+    //          * sec. 2.1)
+    //          */
+    //         auto zx1 = -0.5 * acx + std::sqrt(cdiskr);
+    //         auto zx2 = -0.5 * acx - std::sqrt(cdiskr);
+    //         auto zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
+    //         auto zxmin = bcx / zxmax;
+    //         roots[0] = zxmin;
+    //         roots[1] = std::conj(zxmin);
+    //         roots[2] = zxmax;
+    //         roots[3] = std::conj(zxmax);
+    //     }
+    //     else
+    //     {  // d2 ~ 0
+    //         /* never gets here! */
+    //         auto cdiskr = std::sqrt(acx * acx - 4.0 * bcx);
+    //         auto zx1 = -0.5 * (acx + cdiskr);
+    //         auto zx2 = -0.5 * (acx - cdiskr);
+    //         auto zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
+    //         auto zxmin = bcx / zxmax;
+    //         roots[0] = zxmax;
+    //         roots[1] = zxmin;
+    //         cdiskr = std::sqrt(ccx * ccx - 4.0 * dcx);
+    //         zx1 = -0.5 * (ccx + cdiskr);
+    //         zx2 = -0.5 * (ccx - cdiskr);
+    //         zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
+    //         zxmin = dcx / zxmax;
+    //         roots[2] = zxmax;
+    //         roots[3] = zxmin;
+    //     }
+    // }
     if (rfact != 1.0)
     {
         for (int k = 0; k < 4; k++)
@@ -845,12 +845,6 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
     for (int i = 0; i < 4; i++)
     {
         cmplx_type new_root = roots[i];
-
-        if (soft_zero_(new_root.imag()) && imag_path_taken_)
-        {
-            real_roots[0] = 100;
-            break;
-        }
 
         if (soft_zero_(new_root.imag()) && new_root.real() != no_solution_
             && new_root.real() > 0 && !soft_zero_(new_root.real()))
