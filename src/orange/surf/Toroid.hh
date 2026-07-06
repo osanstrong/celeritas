@@ -13,7 +13,8 @@
 #include "corecel/math/Algorithms.hh"
 #include "corecel/math/ArrayOperators.hh"
 #include "corecel/math/ArrayUtils.hh"
-#include "corecel/math/FerrariSolver.hh"
+// #include "corecel/math/FerrariSolver.hh"
+#include "corecel/math/Alg1010Solver.hh"
 #include "orange/OrangeTypes.hh"
 #include "orange/SenseUtils.hh"
 
@@ -195,7 +196,8 @@ CELER_FUNCTION auto Toroid::calc_intersections(Real3 const& pos,
     -> Intersections
 {
     Real5 abcde = calc_intersection_polynomial(pos, dir, on_surface);
-    FerrariSolver solve{};  // Default tolerance
+    // FerrariSolver solve{};  // Default tolerance
+    Alg1010Solver solve{};  // Default tolerance
     Intersections roots;
 
     if (on_surface == SurfaceState::on)

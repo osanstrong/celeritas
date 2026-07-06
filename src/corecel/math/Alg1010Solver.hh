@@ -15,7 +15,8 @@
 #include "corecel/Constants.hh"
 #include "corecel/Types.hh"
 #include "corecel/cont/Array.hh"
-#include "corecel/math/Algorithms.hh"
+#include "corecel/math/Complex.hh"
+// #include "corecel/math/Algorithms.hh"
 #include "corecel/math/NumericLimits.hh"
 #include "corecel/math/PolyEvaluator.hh"
 #include "corecel/math/SoftEqual.hh"
@@ -39,7 +40,7 @@ class Alg1010Solver
     using Real4 = Array<real_type, 4>;
     using Real5 = Array<real_type, 5>;
     using result_type = Real4;
-    using cmplx_type = std::complex<real_type>;
+    using cmplx_type = complex;
     using Comp2 = Array<cmplx_type, 2>;
     using Comp3 = Array<cmplx_type, 3>;
     using Comp4 = Array<cmplx_type, 4>;
@@ -47,10 +48,11 @@ class Alg1010Solver
 
   public:
     // pow(DBL_MAX,1.0/3.0)/1.618034;
-    static constexpr double CUBIC_RESCAL_FACT = 3.488062113727083e+102;
+    static constexpr real_type CUBIC_RESCAL_FACT = 3.488062113727083e+102;
     // pow(DBL_MAX,1.0/4.0)/1.618034;
-    static constexpr double QUART_RESCAL_FACT = 7.156344627944542e+76;
-    static constexpr double MACHEPS = std::numeric_limits<double>::epsilon();
+    static constexpr real_type QUART_RESCAL_FACT = 7.156344627944542e+76;
+    static constexpr real_type MACHEPS
+        = celeritas::numeric_limits<real_type>::epsilon();
 
     // Construct with given tolerance
     inline CELER_FUNCTION Alg1010Solver(real_type tolerance);
@@ -152,7 +154,7 @@ CELER_FUNCTION Alg1010Solver::Alg1010Solver(real_type tolerance)
 {
 }
 
-CELER_FUNCTION double
+CELER_FUNCTION real_type
 Alg1010Solver::solve_cubic_analytic_depressed_handle_inf(real_type b,
                                                          real_type c) const
 {
@@ -166,7 +168,7 @@ Alg1010Solver::solve_cubic_analytic_depressed_handle_inf(real_type b,
     }
 
     real_type KK;
-    if (std::abs(Q) < std::abs(R))
+    if (std::fabs(Q) < std::fabs(R))
     {
         real_type QR = Q / R;
         real_type QRSQ = QR * QR;
@@ -181,7 +183,7 @@ Alg1010Solver::solve_cubic_analytic_depressed_handle_inf(real_type b,
     if (KK < 0.0)
     {
         real_type sqrtQ = std::sqrt(Q);
-        real_type theta = std::acos((R / std::abs(Q)) / sqrtQ);
+        real_type theta = std::acos((R / std::fabs(Q)) / sqrtQ);
         if (2.0 * theta < M_PI)
             return -2.0 * sqrtQ * std::cos(theta / 3.0);
         else
@@ -190,14 +192,15 @@ Alg1010Solver::solve_cubic_analytic_depressed_handle_inf(real_type b,
     else
     {
         real_type A;
-        if (std::abs(Q) < std::abs(R))
+        if (std::fabs(Q) < std::fabs(R))
             A = -std::copysign(1.0, R)
-                * cbrt(std::abs(R) * (1.0 + std::sqrt(KK)));
+                * cbrt(std::fabs(R) * (1.0 + std::sqrt(KK)));
         else
         {
             A = -std::copysign(1.0, R)
-                * cbrt(std::abs(R)
-                       + std::sqrt(std::abs(Q)) * std::abs(Q) * std::sqrt(KK));
+                * cbrt(std::fabs(R)
+                       + std::sqrt(std::fabs(Q)) * std::fabs(Q)
+                             * std::sqrt(KK));
         }
         real_type B = (A == 0.0) ? 0.0 : Q / A;
         return A + B;
@@ -211,7 +214,7 @@ Alg1010Solver::solve_cubic_analytic_depressed(real_type b, real_type c) const
      * (see sec. 2.2 in the manuscript) */
     real_type Q = -b / 3.0;
     real_type R = 0.5 * c;
-    if (std::abs(Q) > 1e102 || std::abs(R) > 1e154)
+    if (std::fabs(Q) > 1e102 || std::fabs(R) > 1e154)
     {
         return Alg1010Solver::solve_cubic_analytic_depressed_handle_inf(b, c);
     }
@@ -229,7 +232,7 @@ Alg1010Solver::solve_cubic_analytic_depressed(real_type b, real_type c) const
     else
     {
         real_type A = -std::copysign(1.0, R)
-                      * std::pow(std::abs(R) + std::sqrt(R2 - Q3), 1.0 / 3.0);
+                      * std::pow(std::fabs(R) + std::sqrt(R2 - Q3), 1.0 / 3.0);
         real_type B = (A == 0.0) ? 0.0 : Q / A;
         return A + B; /* this is always largest root even if A=B */
     }
@@ -304,11 +307,11 @@ CELER_FUNCTION real_type Alg1010Solver::calc_phi0(Real4 const& abcd,
     real_type xxx = x * xsq;
     real_type gx = g * x;
     real_type f = x * (xsq + g) + h;
-    real_type maxtt = std::max(std::abs(xxx), std::abs(gx));
-    if (std::abs(h) > maxtt)
-        maxtt = std::abs(h);
+    real_type maxtt = max(std::fabs(xxx), std::fabs(gx));
+    if (std::fabs(h) > maxtt)
+        maxtt = std::fabs(h);
 
-    if (std::abs(f) > Alg1010Solver::MACHEPS * maxtt)
+    if (std::fabs(f) > Alg1010Solver::MACHEPS * maxtt)
     {
         for (int iter = 0; iter < 8; iter++)
         {
@@ -327,7 +330,7 @@ CELER_FUNCTION real_type Alg1010Solver::calc_phi0(Real4 const& abcd,
                 break;
             }
 
-            if (std::abs(f) >= std::abs(fold))
+            if (std::fabs(f) >= std::fabs(fold))
             {
                 x = xold;
                 break;
@@ -346,12 +349,12 @@ CELER_FUNCTION real_type Alg1010Solver::calc_err_ldlt(real_type b,
                                                       real_type l3) const
 {
     /* Eqs. (29) and (30) in the manuscript */
-    real_type sum = (b == 0) ? std::abs(d2 + l1 * l1 + 2.0 * l3)
-                             : std::abs(((d2 + l1 * l1 + 2.0 * l3) - b) / b);
-    sum += (c == 0) ? std::abs(2.0 * d2 * l2 + 2.0 * l1 * l3)
-                    : std::abs(((2.0 * d2 * l2 + 2.0 * l1 * l3) - c) / c);
-    sum += (d == 0) ? std::abs(d2 * l2 * l2 + l3 * l3)
-                    : std::abs(((d2 * l2 * l2 + l3 * l3) - d) / d);
+    real_type sum = (b == 0) ? std::fabs(d2 + l1 * l1 + 2.0 * l3)
+                             : std::fabs(((d2 + l1 * l1 + 2.0 * l3) - b) / b);
+    sum += (c == 0) ? std::fabs(2.0 * d2 * l2 + 2.0 * l1 * l3)
+                    : std::fabs(((2.0 * d2 * l2 + 2.0 * l1 * l3) - c) / c);
+    sum += (d == 0) ? std::fabs(d2 * l2 * l2 + l3 * l3)
+                    : std::fabs(((d2 * l2 * l2 + l3 * l3) - d) / d);
     return sum;
 }
 
@@ -366,12 +369,14 @@ CELER_FUNCTION real_type Alg1010Solver::calc_err_abcd_cmplx(real_type a,
 {
     /* Eqs. (68) and (69) in the manuscript for complex alpha1 (aq), beta1
      * (bq), alpha2 (cq) and beta2 (dq) */
-    real_type sum = (d == 0) ? std::abs(bq * dq) : std::abs((bq * dq - d) / d);
-    sum += (c == 0) ? std::abs(bq * cq + aq * dq)
-                    : std::abs(((bq * cq + aq * dq) - c) / c);
-    sum += (b == 0) ? std::abs(bq + aq * cq + dq)
-                    : std::abs(((bq + aq * cq + dq) - b) / b);
-    sum += (a == 0) ? std::abs(aq + cq) : std::abs(((aq + cq) - a) / a);
+    auto cabs = [](cmplx_type comp) { return comp.abs(); };
+
+    real_type sum = (d == 0) ? cabs(bq * dq) : cabs((bq * dq - d) / d);
+    sum += (c == 0) ? cabs(bq * cq + aq * dq)
+                    : cabs(((bq * cq + aq * dq) - c) / c);
+    sum += (b == 0) ? cabs(bq + aq * cq + dq)
+                    : cabs(((bq + aq * cq + dq) - b) / b);
+    sum += (a == 0) ? cabs(aq + cq) : cabs(((aq + cq) - a) / a);
     return sum;
 }
 
@@ -386,12 +391,13 @@ CELER_FUNCTION real_type Alg1010Solver::calc_err_abcd(real_type a,
 {
     /* Eqs. (68) and (69) in the manuscript for real alpha1 (aq), beta1 (bq),
      * alpha2 (cq) and beta2 (dq)*/
-    real_type sum = (d == 0) ? std::abs(bq * dq) : std::abs((bq * dq - d) / d);
-    sum += (c == 0) ? std::abs(bq * cq + aq * dq)
-                    : std::abs(((bq * cq + aq * dq) - c) / c);
-    sum += (b == 0) ? std::abs(bq + aq * cq + dq)
-                    : std::abs(((bq + aq * cq + dq) - b) / b);
-    sum += (a == 0) ? std::abs(aq + cq) : std::abs(((aq + cq) - a) / a);
+    real_type sum = (d == 0) ? std::fabs(bq * dq)
+                             : std::fabs((bq * dq - d) / d);
+    sum += (c == 0) ? std::fabs(bq * cq + aq * dq)
+                    : std::fabs(((bq * cq + aq * dq) - c) / c);
+    sum += (b == 0) ? std::fabs(bq + aq * cq + dq)
+                    : std::fabs(((bq + aq * cq + dq) - b) / b);
+    sum += (a == 0) ? std::fabs(aq + cq) : std::fabs(((aq + cq) - a) / a);
     return sum;
 }
 
@@ -404,11 +410,11 @@ CELER_FUNCTION real_type Alg1010Solver::calc_err_abc(real_type a,
                                                      real_type dq) const
 {
     /* Eqs. (48)-(51) in the manuscript */
-    real_type sum = (c == 0) ? std::abs(bq * cq + aq * dq)
-                             : std::abs(((bq * cq + aq * dq) - c) / c);
-    sum += (b == 0) ? std::abs(bq + aq * cq + dq)
-                    : std::abs(((bq + aq * cq + dq) - b) / b);
-    sum += (a == 0) ? std::abs(aq + cq) : std::abs(((aq + cq) - a) / a);
+    real_type sum = (c == 0) ? std::fabs(bq * cq + aq * dq)
+                             : std::fabs(((bq * cq + aq * dq) - c) / c);
+    sum += (b == 0) ? std::fabs(bq + aq * cq + dq)
+                    : std::fabs(((bq + aq * cq + dq) - b) / b);
+    sum += (a == 0) ? std::fabs(aq + cq) : std::fabs(((aq + cq) - a) / a);
     return sum;
 }
 
@@ -443,8 +449,8 @@ CELER_FUNCTION void Alg1010Solver::NRabcd(real_type a,
     real_type errf = 0;
     for (int k1 = 0; k1 < 4; k1++)
     {
-        errf += (vr[k1] == 0) ? std::abs(fvec[k1])
-                              : std::abs(fvec[k1] / vr[k1]);
+        errf += (vr[k1] == 0) ? std::fabs(fvec[k1])
+                              : std::fabs(fvec[k1] / vr[k1]);
     }
     for (int iter = 0; iter < 8; iter++)
     {
@@ -490,8 +496,8 @@ CELER_FUNCTION void Alg1010Solver::NRabcd(real_type a,
         errf = 0;
         for (int k1 = 0; k1 < 4; k1++)
         {
-            errf += (vr[k1] == 0) ? std::abs(fvec[k1])
-                                  : std::abs(fvec[k1] / vr[k1]);
+            errf += (vr[k1] == 0) ? std::fabs(fvec[k1])
+                                  : std::fabs(fvec[k1] / vr[k1]);
         }
         if (errf == 0)
             break;
@@ -631,11 +637,11 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
 
         cq = l1 - gamma;
         dq = l3 - gamma * l2;
-        if (std::abs(dq) < std::abs(bq))
+        if (std::fabs(dq) < std::fabs(bq))
             dq = d / bq;
-        else if (std::abs(dq) > std::abs(bq))
+        else if (std::fabs(dq) > std::fabs(bq))
             bq = d / dq;
-        if (std::abs(aq) < std::abs(cq))
+        if (std::fabs(aq) < std::fabs(cq))
         {
             nsol = 0;
             if (dq != 0)
@@ -713,8 +719,8 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
         real_type gamma = std::sqrt(d2);
         acx = cmplx_type(l1, gamma);
         bcx = cmplx_type(l3, gamma * l2);
-        ccx = std::conj(acx);
-        dcx = std::conj(bcx);
+        ccx = acx.conj();
+        dcx = bcx.conj();
         realcase[0] = 0;
     }
     else
@@ -722,9 +728,9 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
     /* Case III: d2 is 0 or approximately 0 (in this case check which solution
      * is better) */
     if (realcase[0] == -1
-        || (std::abs(d2)
+        || (std::fabs(d2)
             <= Alg1010Solver::MACHEPS
-                   * (std::abs(2. * b / 3.) + std::abs(phi0) + l1 * l1)))
+                   * (std::fabs(2. * b / 3.) + std::fabs(phi0) + l1 * l1)))
     {
         real_type d3 = d - l3 * l3;
         real_type err0 = 0.0;
@@ -743,9 +749,9 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
             bq1 = l3 + std::sqrt(-d3);
             cq1 = l1;
             dq1 = l3 - std::sqrt(-d3);
-            if (std::abs(dq1) < std::abs(bq1))
+            if (std::fabs(dq1) < std::fabs(bq1))
                 dq1 = d / bq1;
-            else if (std::abs(dq1) > std::abs(bq1))
+            else if (std::fabs(dq1) > std::fabs(bq1))
                 bq1 = d / dq1;
             err1 = Alg1010Solver::calc_err_abcd(
                 a, b, c, d, aq1, bq1, cq1, dq1); /* eq.
@@ -757,9 +763,9 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
             /* complex */
             realcase[1] = 0;
             acx1 = l1;
-            bcx1 = l3 + cmplx_type(0., std::sqrt(d3));
+            bcx1 = cmplx_type(0., std::sqrt(d3)) + l3;
             ccx1 = l1;
-            dcx1 = std::conj(bcx1);
+            dcx1 = bcx1.conj();
             err1 = Alg1010Solver::calc_err_abcd_cmplx(
                 a, b, c, d, acx1, bcx1, ccx1, dcx1);
         }
@@ -797,43 +803,43 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
         roots[2] = qroots[0];
         roots[3] = qroots[1];
     }
-    // else
-    // {
-    //     /* complex coefficients of p1 and p2 */
-    //     if (whichcase == 0)
-    //     {  // d2!=0
-    //         auto cdiskr = 0.25 * acx * acx - bcx;
-    //         /* calculate the roots as roots of p1(x) and p2(x) (see end of
-    //          * sec. 2.1)
-    //          */
-    //         auto zx1 = -0.5 * acx + std::sqrt(cdiskr);
-    //         auto zx2 = -0.5 * acx - std::sqrt(cdiskr);
-    //         auto zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
-    //         auto zxmin = bcx / zxmax;
-    //         roots[0] = zxmin;
-    //         roots[1] = std::conj(zxmin);
-    //         roots[2] = zxmax;
-    //         roots[3] = std::conj(zxmax);
-    //     }
-    //     else
-    //     {  // d2 ~ 0
-    //         /* never gets here! */
-    //         auto cdiskr = std::sqrt(acx * acx - 4.0 * bcx);
-    //         auto zx1 = -0.5 * (acx + cdiskr);
-    //         auto zx2 = -0.5 * (acx - cdiskr);
-    //         auto zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
-    //         auto zxmin = bcx / zxmax;
-    //         roots[0] = zxmax;
-    //         roots[1] = zxmin;
-    //         cdiskr = std::sqrt(ccx * ccx - 4.0 * dcx);
-    //         zx1 = -0.5 * (ccx + cdiskr);
-    //         zx2 = -0.5 * (ccx - cdiskr);
-    //         zxmax = (std::abs(zx1) > std::abs(zx2)) ? zx1 : zx2;
-    //         zxmin = dcx / zxmax;
-    //         roots[2] = zxmax;
-    //         roots[3] = zxmin;
-    //     }
-    // }
+    else
+    {
+        /* complex coefficients of p1 and p2 */
+        if (whichcase == 0)
+        {  // d2!=0
+            auto cdiskr = acx * acx * 0.25 - bcx;
+            /* calculate the roots as roots of p1(x) and p2(x) (see end of
+             * sec. 2.1)
+             */
+            auto zx1 = acx * -0.5 + cdiskr.sqrt();
+            auto zx2 = acx * -0.5 - cdiskr.sqrt();
+            auto zxmax = (zx1.abs() > zx2.abs()) ? zx1 : zx2;
+            auto zxmin = bcx / zxmax;
+            roots[0] = zxmin;
+            roots[1] = zxmin.conj();
+            roots[2] = zxmax;
+            roots[3] = zxmax.conj();
+        }
+        else
+        {  // d2 ~ 0
+            /* never gets here! */
+            auto cdiskr = (acx * acx - bcx * 4.0).sqrt();
+            auto zx1 = (acx + cdiskr) * -0.5;
+            auto zx2 = (acx - cdiskr) * -0.5;
+            auto zxmax = (zx1.abs() > zx2.abs()) ? zx1 : zx2;
+            auto zxmin = bcx / zxmax;
+            roots[0] = zxmax;
+            roots[1] = zxmin;
+            cdiskr = (ccx * ccx - dcx * 4.0).sqrt();
+            zx1 = (ccx + cdiskr) * -0.5;
+            zx2 = (ccx - cdiskr) * -0.5;
+            zxmax = (zx1.abs() > zx2.abs()) ? zx1 : zx2;
+            zxmin = dcx / zxmax;
+            roots[2] = zxmax;
+            roots[3] = zxmin;
+        }
+    }
     if (rfact != 1.0)
     {
         for (int k = 0; k < 4; k++)
@@ -846,10 +852,10 @@ CELER_FUNCTION auto Alg1010Solver::operator()(Real5 const& coeff) const
     {
         cmplx_type new_root = roots[i];
 
-        if (soft_zero_(new_root.imag()) && new_root.real() != no_solution_
-            && new_root.real() > 0 && !soft_zero_(new_root.real()))
+        if (soft_zero_(new_root.imag) && new_root.real != no_solution_
+            && new_root.real > 0 && !soft_zero_(new_root.real))
         {
-            real_roots[ri] = new_root.real();
+            real_roots[ri] = new_root.real;
             ri += 1;
         }
     }
