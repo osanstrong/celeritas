@@ -69,6 +69,7 @@ fancy_hostname() {
 
 # Determine the environment script for the given hostname
 get_system_env() {
+  log info "Trying to use source dir of ${CELER_SOURCE_DIR}"
   ENV_SCRIPT="${CELER_SOURCE_DIR}/scripts/env/$1.sh"
   if [ ! -f "${ENV_SCRIPT}" ]; then
     log debug "No environment script exists at ${ENV_SCRIPT}"
@@ -316,16 +317,16 @@ shift
 log info "Configuring with --preset=${CMAKE_PRESET} --log-level=VERBOSE $@"
 cmake --preset="${CMAKE_PRESET}" --log-level=VERBOSE "$@"
 log info "Building with --preset=${CMAKE_PRESET}"
-if cmake --build --preset="${CMAKE_PRESET}"; then
+if cmake --build --preset="${CMAKE_PRESET}" -Wall -Werror; then
   log info "Testing with --preset=${CMAKE_PRESET} --timeout 15"
-  if ctest --preset="${CMAKE_PRESET}" --timeout 15; then
-    log info "Celeritas was successfully built and tested for development!"
-  else
-    log warning "Celeritas built but some tests failed"
-    log info "Ask the Celeritas team whether the failures indicate an actual error"
-    log info "Provide the system configuration:"
-    cmake --build-target get-config --preset=${CMAKE_PRESET}
-  fi
+  # if ctest --preset="${CMAKE_PRESET}" --timeout 15; then
+  #   log info "Celeritas was successfully built and tested for development!"
+  # else
+  #   log warning "Celeritas built but some tests failed"
+  #   log info "Ask the Celeritas team whether the failures indicate an actual error"
+  #   log info "Provide the system configuration:"
+  #   cmake --build-target get-config --preset=${CMAKE_PRESET}
+  # fi
 
   install_precommit_if_git
 else

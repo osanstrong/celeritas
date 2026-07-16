@@ -30,7 +30,13 @@ struct complex
     //     return complex{0,0};
     // }
 
-    inline CELER_FUNCTION complex sqrt() const { return complex{0, 0}; }
+    inline CELER_FUNCTION complex sqrt() const
+    {
+        real_type r = std::sqrt(0.5 * (this->abs() + this->real));
+        real_type i = std::copysign(
+            std::sqrt(0.5 * (this->abs() - this->real)), this->imag);
+        return complex{r, i};
+    }
 
     inline CELER_FUNCTION real_type abs() const
     {

@@ -7,19 +7,26 @@
 #pragma once
 
 #include <cmath>
+// #include <atomic>
+#include <cuda/atomic>
 
 #include "corecel/cont/Array.hh"
 #include "corecel/cont/Span.hh"
 #include "corecel/math/Algorithms.hh"
 #include "corecel/math/ArrayOperators.hh"
 #include "corecel/math/ArrayUtils.hh"
+#include "corecel/math/Atomics.hh"
 // #include "corecel/math/FerrariSolver.hh"
+#include "corecel/io/Logger.hh"
 #include "corecel/math/Alg1010Solver.hh"
 #include "orange/OrangeTypes.hh"
 #include "orange/SenseUtils.hh"
 
 namespace celeritas
 {
+
+// static __host__ int num_toroid_disputes = 0;
+// static __host__ int num_toroid_calls = 0;
 //---------------------------------------------------------------------------//
 /*!
  * Z-aligned Elliptical Toroid.
@@ -125,6 +132,10 @@ class Toroid
   private:
     //// DATA ////
 
+    // //! Counters
+    // inline static int num_toroid_calls = 0;
+    // inline static int num_toroid_disputes = 0;
+
     //! Location of center of toroid
     Real3 origin_;
 
@@ -195,21 +206,74 @@ CELER_FUNCTION auto Toroid::calc_intersections(Real3 const& pos,
                                                SurfaceState on_surface) const
     -> Intersections
 {
+    // printf("Toroid call :)\n");
+    // num_toroid_calls++;
+    // atomic_add(&num_toroid_calls, 1);
     Real5 abcde = calc_intersection_polynomial(pos, dir, on_surface);
-    // FerrariSolver solve{};  // Default tolerance
+    // FerrariSolver solvef{};  // Default tolerance
     Alg1010Solver solve{};  // Default tolerance
     Intersections roots;
+    // Intersections rootsf;
 
     if (on_surface == SurfaceState::on)
     {
         auto [a, b, c, d, e] = abcde;
         roots = solve(Real4{a, b, c, d});
+        // rootsf = solvef(Real4{a, b, c, d});
     }
     else
     {
         roots = solve(abcde);
+        // rootsf = solvef(abcde);
+    }
+    // Intersections proots = Intersections{roots};
+    // Intersections prootsf = Intersections{rootsf};
+    /*
+    real_type bestt = no_intersection(), bestf = no_intersection();
+
+    for (int i = 0; i < 4; i++) {
+        if (roots[i] < bestt && roots[i] > 0) bestt = roots[i];
+        if (rootsf[i] < bestf && rootsf[i] > 0) bestf = rootsf[i];
     }
 
+    // real_type diff = std::fabs(bestt - bestf);
+
+    // if (diff > 0.0001 && !(bestf == no_intersection() && bestt ==
+    no_intersection())) { if (!soft_equal(bestt, bestf) && !(bestf ==
+    no_intersection() && bestt == no_intersection())) {
+        // num_toroid_disputes++;
+        // atomic_add(&num_toroid_disputes, 1);
+        auto [tx, ty, tz] = this->origin_;
+        auto [px, py, pz] = pos;
+        auto [dx, dy, dz] = dir;
+        auto [a, b, c, d, e] = abcde;
+        auto [f0, f1, f2, f3] = rootsf;
+        auto [t0, t1, t2, t3] = roots;
+
+        // printf("Quartic rootfinders doo not agree \nFerrari: %f\nAlg1010:
+    %f\n", bestf, bestt); printf("------------------------\nQuartic rootfinders
+    do not agree!\nToroid: (r: %f, a: %f, b: %f) at (%f, %f, %f)\nRay: (%f, %f,
+    %f) from (%f, %f, %f)\nPolynomial: [%f, %f, %f, %f, %f]\nFerrari: %f (%f,
+    %f, %f, %f)\nAlg1010: %f (%f, %f, %f, %f)\n",
+        // printf("------------------------\nQuartic rootfinders do not agree
+    (Call #%d, dispute #%d)!\nToroid: (r: %f, a: %f, b: %f) at (%f, %f,
+    %f)\nRay: (%f, %f, %f) from (%f, %f, %f)\nPolynomial: [%f, %f, %f, %f,
+    %f]\nFerrari: %f (%f, %f, %f, %f)\nAlg1010: %f (%f, %f, %f, %f)\n",
+        // printf("------------------------\nQuartic rootfinders do not
+    agree!\nPolynomial: %fx4 + %fx3 + %fx2 + %fx + %f\nFerrari: %f (%f, %f, %f,
+    %f)\nAlg1010: %f (%f, %f, %f, %f)\n",
+            // num_toroid_calls, num_toroid_disputes,
+            this->r_, this->a_, this->b_, tx, ty, tz,
+            dx, dy, dz, px, py, pz,
+            a, b, c, d, e,
+            bestf, f0, f1, f2, f3,
+            bestt, t0, t1, t2, t3);
+    }*/
+
+    // if (!soft_equal(std::min_element(roots.begin(), roots.end()),
+    // std::min_element(rootsf.begin(), rootsf.end()))) {
+
+    // }
     return roots;
 }
 

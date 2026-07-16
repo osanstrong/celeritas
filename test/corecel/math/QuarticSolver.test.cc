@@ -122,6 +122,16 @@ TYPED_TEST(QuarticSolverTest, two_roots)
         EXPECT_VEC_SOFT_EQ(make_roots({1.0, 2.0}),
                            sorted(solve(Real5{1, -6, 13, -12, 4})));
     }
+    // 1.000000, 6.624882, -55153.295666, -182728.383115, 58138233.485928
+    // Expect -234.2334266 ,  230.92098561,  -34.48299716,   31.17055615
+    {
+        EXPECT_VEC_SOFT_EQ(make_roots({31.17055615, 230.92098561}),
+                           sorted(solve(Real5{1.000000,
+                                              6.624882,
+                                              -55153.295666,
+                                              -182728.383115,
+                                              58138233.485928})));
+    }
 }
 
 TYPED_TEST(QuarticSolverTest, three_roots)

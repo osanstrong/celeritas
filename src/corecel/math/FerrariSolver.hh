@@ -158,7 +158,22 @@ CELER_FUNCTION auto FerrariSolver::operator()(Real5 const& abcde) const
     // One real root of subsidiary cubic
     Real3 z = FerrariSolver::real_roots_normalized_cubic(
         p, r, p * r - half * ipow<2>(q));
-    real_type z0 = z[0];
+    // real_type z0 = z[0];
+    auto finmax = [](real_type a, real_type b) {
+        if (b == no_solution_)
+        {
+            return a;
+        }
+        else if (a == no_solution_)
+        {
+            return b;
+        }
+        else
+        {
+            return max(a, b);
+        }
+    };
+    real_type z0 = finmax(z[0], finmax(z[1], z[2]));
 
     real_type s2 = 2 * p + 2 * z0;
     if (s2 >= 0)
