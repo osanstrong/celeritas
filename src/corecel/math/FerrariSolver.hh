@@ -165,7 +165,8 @@ CELER_FUNCTION auto FerrariSolver::operator()(Real5 const& abcde) const
     {
         real_type s = std::sqrt(s2);
         real_type t;
-        if (soft_zero_(s))
+        real_type tol = 1e-6;
+        if (std::fabs(s) < tol)
         {
             t = ipow<2>(z0) + r;
         }
