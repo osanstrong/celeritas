@@ -257,9 +257,9 @@ CELER_FUNCTION auto Toroid::calc_intersection_polynomial(
 
     auto [x0_d, y0_d, z0_d] = pos - origin_;
     auto [ax_d, ay_d, az_d] = make_unit_vector(dir);
-    quad_type x0 = x0_d, y0 = y0_d, z0 = z0_d;
-    quad_type ax = ax_d, ay = ay_d, az = az_d;
-    quad_type rq = r_, aq = a_, bq = b_;
+    quad_type x0 = {x0_d, 0}, y0 = {y0_d, 0}, z0 = {z0_d, 0};
+    quad_type ax = {ax_d, 0}, ay = {ay_d, 0}, az = {az_d, 0};
+    quad_type rq = {r_, 0}, aq = {a_, 0}, bq = {b_, 0};
 
     printf("inputs:\n %f, %f, %f\n %f, %f, %f\n %f, %f, %f\n",
         x0.x, y0.x, z0.x,
@@ -286,7 +286,7 @@ CELER_FUNCTION auto Toroid::calc_intersection_polynomial(
     quad_type c3 = 2 * m;
     quad_type c2 = sqr(m) + 2 * u - q * f;
     quad_type c1 = 2 * m * u - q * h;
-    quad_type c0 = on_surface == SurfaceState::on ? quad_type(0) : sqr(u) - q * t;
+    quad_type c0 = on_surface == SurfaceState::on ? make_gdd(0) : sqr(u) - q * t;
     // Potential refinement of c0 if close to 0?
 
     // return Real5{c4.upper, c3.upper, c2.upper, c1.upper, c0.upper};
