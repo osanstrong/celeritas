@@ -73,15 +73,21 @@ class DDFerrariSolver
     inline CELER_FUNCTION result_type operator()(Real4 const& abcd) const;
 
     // General solver, given normal floats
-    inline CELER_FUNCTION result_type operator()(Array<real_type, 5> const& abcde) const {
+    inline CELER_FUNCTION result_type operator()(
+        Array<real_type, 5> const& abcde) const
+    {
         auto [a, b, c, d, e] = abcde;
-        return operator()(Real5{make_gdd(a), make_gdd(b), make_gdd(c), make_gdd(d), make_gdd(e)});
+        return operator()(Real5{
+            make_gdd(a), make_gdd(b), make_gdd(c), make_gdd(d), make_gdd(e)});
     }
 
     // Surface case, given normal floats
-    inline CELER_FUNCTION result_type operator()(Array<real_type, 4> const& abcd) const {
+    inline CELER_FUNCTION result_type operator()(
+        Array<real_type, 4> const& abcd) const
+    {
         auto [a, b, c, d] = abcd;
-        return operator()(Real4{make_gdd(a), make_gdd(b), make_gdd(c), make_gdd(d)});
+        return operator()(
+            Real4{make_gdd(a), make_gdd(b), make_gdd(c), make_gdd(d)});
     }
 
   private:
@@ -131,7 +137,9 @@ class DDFerrariSolver
  * such as the particle starting on the surface.
  */
 CELER_FUNCTION
-DDFerrariSolver::DDFerrariSolver(real_type tolerance) : soft_zero_{tolerance} {}
+DDFerrariSolver::DDFerrariSolver(real_type tolerance) : soft_zero_{tolerance}
+{
+}
 
 //---------------------------------------------------------------------------//
 /*!
@@ -157,9 +165,12 @@ CELER_FUNCTION auto DDFerrariSolver::operator()(Real5 const& abcde) const
     gdd_real qb = 0.25 * ba;
 
     // Incomplete quartic
-    gdd_real p = PolyEvaluator<gdd_real, 2>{-half * ca, make_gdd(0), make_gdd(3)}(qb);
-    gdd_real q = PolyEvaluator<gdd_real, 3>{half * da, negative(ca), make_gdd(0), make_gdd(4)}(qb);
-    gdd_real r = PolyEvaluator<gdd_real, 4>{negative(ea), da, negative(ca), make_gdd(0), make_gdd(3)}(qb);
+    gdd_real p
+        = PolyEvaluator<gdd_real, 2>{-half * ca, make_gdd(0), make_gdd(3)}(qb);
+    gdd_real q = PolyEvaluator<gdd_real, 3>{
+        half * da, negative(ca), make_gdd(0), make_gdd(4)}(qb);
+    gdd_real r = PolyEvaluator<gdd_real, 4>{
+        negative(ea), da, negative(ca), make_gdd(0), make_gdd(3)}(qb);
 
     // Edge case: equation is biquadratic
     if (soft_zero_(q.x))
@@ -169,8 +180,10 @@ CELER_FUNCTION auto DDFerrariSolver::operator()(Real5 const& abcde) const
 
     // One real root of subsidiary cubic
     Real3 z = DDFerrariSolver::real_roots_normalized_cubic(
-        p, r, p * r - half * q*q);
-    gdd_real z0 = (z[1].x == no_solution_) ? z[0] : max<gdd_real>(z[0], max(z[1], z[2]));
+        p, r, p * r - half * q * q);
+    gdd_real z0 = (z[1].x == no_solution_)
+                      ? z[0]
+                      : max<gdd_real>(z[0], max(z[1], z[2]));
 
     gdd_real s2 = 2 * p + 2 * z0;
     if (s2 >= 0)
@@ -242,7 +255,7 @@ CELER_FUNCTION auto DDFerrariSolver::operator()(Real4 const& abcd) const
 CELER_FUNCTION int DDFerrariSolver::place_root(
     result_type& roots, real_type new_root, int free_index) const
 {
-    if (!(new_root == no_solution_ || new_root <= 0))
+    if (!(new_root == no_solution_ || std::isnan(new_root) || new_root <= 0))
     {
         roots[free_index] = new_root;
         free_index += 1;
@@ -312,21 +325,25 @@ CELER_FUNCTION auto DDFerrariSolver::real_roots_normalized_cubic(
 
     // Intermediate values
     gdd_real q = sqr(third_b) - third * c;
-    gdd_real r = half * PolyEvaluator<gdd_real, 3>{d, -c, make_gdd(0), make_gdd(2)}(third_b);
+    gdd_real r = half
+                 * PolyEvaluator<gdd_real, 3>{d, -c, make_gdd(0), make_gdd(2)}(
+                     third_b);
 
-    gdd_real q3 = sqr(q)*q;
+    gdd_real q3 = sqr(q) * q;
     gdd_real r2 = sqr(r);
 
     gdd_real discrim = r2 - q3;
 
     if (soft_zero_(q.x) && soft_zero_(r.x) && soft_zero_(discrim.x))
     {
-        return Real3(-gdd::cbrt(d), make_gdd(no_solution_), make_gdd(no_solution_));
+        return Real3(
+            -gdd::cbrt(d), make_gdd(no_solution_), make_gdd(no_solution_));
     }
-    else if (discrim <= 0)  // All roots real, calculate with trigomonetry
+    else if (discrim < 0)  // All roots real, calculate with trigomonetry
     {
         gdd_real theta = gdd::acos(r / gdd::sqrt(q3));
         gdd_real n2_root_q = -2_r * gdd::sqrt(q);
+        // NOTE: Using positive 2*sqrt(q) seems correct for [1,-2,-2,0,8]?
         gdd_real twth_pi = constants::pi * 2_r * third;
         gdd_real third_theta = theta * third;
 
@@ -338,9 +355,8 @@ CELER_FUNCTION auto DDFerrariSolver::real_roots_normalized_cubic(
     }
     else  // One real and two complex roots, solve for real root with Cardano
     {
-        gdd_real nr_a = -signum(r.x)
-                         * gdd::cbrt(abs(r) + gdd::sqrt(discrim));
-        gdd_real nr_b = nr_a == 0 ? gdd_real{0,0} : q / nr_a;
+        gdd_real nr_a = -signum(r.x) * gdd::cbrt(abs(r) + gdd::sqrt(discrim));
+        gdd_real nr_b = nr_a == 0 ? gdd_real{0, 0} : q / nr_a;
         gdd_real z0 = nr_a + nr_b - third_b;
         return Real3(z0, make_gdd(no_solution_), make_gdd(no_solution_));
     }
@@ -376,7 +392,8 @@ CELER_FUNCTION auto DDFerrariSolver::real_roots_normalized_quadratic(
     }
     else
     {
-        return Real2(gdd_real{no_solution_, no_solution_}, gdd_real{no_solution_, no_solution_});
+        return Real2(gdd_real{no_solution_, no_solution_},
+                     gdd_real{no_solution_, no_solution_});
     }
 }
 
