@@ -21,10 +21,10 @@ namespace gdd {
 inline constexpr CELER_FUNCTION
 double quick_two_sum(double a, double b, double &err) {
 
-    if (b == 0.0) {
-        err = 0.0;
-        return (a + b);
-    }
+    // if (b == 0.0) {
+    //     err = 0.0;
+    //     return (a + b);
+    // }
 
     double s = a + b;
     err = b - (s - a);
@@ -35,10 +35,10 @@ double quick_two_sum(double a, double b, double &err) {
 inline constexpr CELER_FUNCTION
 double two_sum(double a, double b, double &err) {
 
-    if ((a == 0.0) || (b == 0.0)) {
-        err = 0.0;
-        return (a + b);
-    }
+    // if ((a == 0.0) || (b == 0.0)) {
+    //     err = 0.0;
+    //     return (a + b);
+    // }
 
     double s = a + b;
     double bb = s - a;
@@ -52,12 +52,10 @@ double two_sum(double a, double b, double &err) {
 
 inline constexpr CELER_FUNCTION
 double quick_two_diff(double a, double b, double &err) {
-    if (a == b) {
-        err = 0.0;
-        return 0.0;
-    }
-
-    double s;
+    // if (a == b) {
+    //     err = 0.0;
+    //     return 0.0;
+    // }
 
     /*
     if(fabs((a-b)/a) < GPU_D_EPS) {
@@ -67,7 +65,7 @@ double quick_two_diff(double a, double b, double &err) {
     }
      */
 
-    s = a - b;
+    double s = a - b;
     err = (a - s) - b;
     return s;
 }
@@ -76,10 +74,10 @@ double quick_two_diff(double a, double b, double &err) {
 
 inline constexpr CELER_FUNCTION
 double two_diff(double a, double b, double &err) {
-    if (a == b) {
-        err = 0.0;
-        return 0.0;
-    }
+    // if (a == b) {
+    //     err = 0.0;
+    //     return 0.0;
+    // }
 
     double s = a - b;
 
