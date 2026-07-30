@@ -13,9 +13,10 @@
 #include "corecel/math/Algorithms.hh"
 #include "corecel/math/ArrayOperators.hh"
 #include "corecel/math/ArrayUtils.hh"
-#include "corecel/math/FerrariSolver.hh"
+// #include "corecel/math/FerrariSolver.hh"
 // #include "corecel/math/doubledouble.h"
 #include "corecel/math/gdd.hh"
+#include "corecel/math/DDFerrariSolver.hh"
 #include "orange/OrangeTypes.hh"
 #include "orange/SenseUtils.hh"
 
@@ -61,7 +62,8 @@ class Toroid
     using StorageSpan = Span<real_type const, 6>;
     using Real3 = Array<real_type, 3>;
     using Real4 = Array<real_type, 4>;
-    using Real5 = Array<real_type, 5>;
+
+    using Real5 = Array<quad_type, 5>; // This one's only used for the coefficients
     //@}
 
   public:
@@ -197,13 +199,13 @@ CELER_FUNCTION auto Toroid::calc_intersections(
     -> Intersections
 {
     Real5 abcde = calc_intersection_polynomial(pos, dir, on_surface);
-    FerrariSolver solve{};  // Default tolerance
+    DDFerrariSolver solve{};  // Default tolerance
     Intersections roots;
 
     if (on_surface == SurfaceState::on)
     {
         auto [a, b, c, d, e] = abcde;
-        roots = solve(Real4{a, b, c, d});
+        roots = solve(Array<quad_type, 4>{a, b, c, d});
     }
     else
     {
@@ -223,37 +225,37 @@ CELER_FUNCTION auto Toroid::calc_intersections(
 CELER_FUNCTION auto Toroid::calc_intersection_polynomial(
     Real3 const& pos, Real3 const& dir, SurfaceState on_surface) const -> Real5
 {
-    Real5 double_coeffs;
-    {
-        auto [x0, y0, z0] = pos - origin_;
-        auto [ax, ay, az] = make_unit_vector(dir);
+    // Real5 double_coeffs;
+    // {
+    //     auto [x0, y0, z0] = pos - origin_;
+    //     auto [ax, ay, az] = make_unit_vector(dir);
 
-        // Intermediate terms
-        real_type p = sq(a_) / sq(b_);
+    //     // Intermediate terms
+    //     real_type p = sq(a_) / sq(b_);
 
-        real_type f = 1 - sq(az);
-        real_type g = f + p * sq(az);
-        real_type h = 2 * (x0 * ax + y0 * ay);
-        real_type t = sq(x0) + sq(y0);
-        real_type q = 4 * sq(r_) / sq(g);
-        real_type m = (h + 2 * p * z0 * az) / g;
-        real_type u = (t + p * sq(z0) + sq(r_) - sq(a_)) / g;
-        printf("double intermediates: %f, %f, %f, %f, %f, %f, %f, %f\n",
-            p, f, g, h, t, q, m, u
-        );
+    //     real_type f = 1 - sq(az);
+    //     real_type g = f + p * sq(az);
+    //     real_type h = 2 * (x0 * ax + y0 * ay);
+    //     real_type t = sq(x0) + sq(y0);
+    //     real_type q = 4 * sq(r_) / sq(g);
+    //     real_type m = (h + 2 * p * z0 * az) / g;
+    //     real_type u = (t + p * sq(z0) + sq(r_) - sq(a_)) / g;
+    //     printf("double intermediates: %f, %f, %f, %f, %f, %f, %f, %f\n",
+    //         p, f, g, h, t, q, m, u
+    //     );
 
-        // Polynomial coefficients, i.e. cn*x^n
-        real_type c4 = 1;
-        real_type c3 = 2 * m;
-        real_type c2 = sq(m) + 2 * u - q * f;
-        real_type c1 = 2 * m * u - q * h;
-        real_type c0 = on_surface == SurfaceState::on ? 0 : sq(u) - q * t;
-        // Potential refinement of c0 if close to 0?
+    //     // Polynomial coefficients, i.e. cn*x^n
+    //     real_type c4 = 1;
+    //     real_type c3 = 2 * m;
+    //     real_type c2 = sq(m) + 2 * u - q * f;
+    //     real_type c1 = 2 * m * u - q * h;
+    //     real_type c0 = on_surface == SurfaceState::on ? 0 : sq(u) - q * t;
+    //     // Potential refinement of c0 if close to 0?
 
-        double_coeffs = Real5{c4, c3, c2, c1, c0};
-    }
+    //     double_coeffs = Real5{c4, c3, c2, c1, c0};
+    // }
 
-    // --- WITH DOUBLE-DOUBLE TYPE ---
+    // // --- WITH DOUBLE-DOUBLE TYPE ---
 
     auto [x0_d, y0_d, z0_d] = pos - origin_;
     auto [ax_d, ay_d, az_d] = make_unit_vector(dir);
@@ -261,11 +263,11 @@ CELER_FUNCTION auto Toroid::calc_intersection_polynomial(
     quad_type ax = {ax_d, 0}, ay = {ay_d, 0}, az = {az_d, 0};
     quad_type rq = {r_, 0}, aq = {a_, 0}, bq = {b_, 0};
 
-    printf("inputs:\n %f, %f, %f\n %f, %f, %f\n %f, %f, %f\n",
-        x0.x, y0.x, z0.x,
-        ax.x, ay.x, az.x,
-        rq.x, aq.x, bq.x
-    );
+    // printf("inputs:\n %f, %f, %f\n %f, %f, %f\n %f, %f, %f\n",
+    //     x0.x, y0.x, z0.x,
+    //     ax.x, ay.x, az.x,
+    //     rq.x, aq.x, bq.x
+    // );
     // auto sq = [](quad_type val) { val * val; };
 
     // Intermediate terms
@@ -278,9 +280,9 @@ CELER_FUNCTION auto Toroid::calc_intersection_polynomial(
     quad_type q = 4 * sqr(rq) / sqr(g);
     quad_type m = (h + 2 * p * z0 * az) / g;
     quad_type u = (t + p * sqr(z0) + sqr(rq) - sqr(aq)) / g;
-    printf("2-doub intermediates: %f, %f, %f, %f, %f, %f, %f, %f\n",
-        p.x, f.x, g.x, h.x, t.x, q.x, m.x, u.x
-    );
+    // printf("2-doub intermediates: %f, %f, %f, %f, %f, %f, %f, %f\n",
+    //     p.x, f.x, g.x, h.x, t.x, q.x, m.x, u.x
+    // );
 
     // Polynomial coefficients, i.e. cn*x^n
     quad_type c3 = 2 * m;
@@ -290,13 +292,13 @@ CELER_FUNCTION auto Toroid::calc_intersection_polynomial(
     // Potential refinement of c0 if close to 0?
 
     // return Real5{c4.upper, c3.upper, c2.upper, c1.upper, c0.upper};
-    auto dc = double_coeffs;
-    printf(
-        "Doubles: {[1], %f, %f, %f, %f}\n2-doubs: {[1], %f, %f, %f, %f}\n",
-        dc[1], dc[2], dc[3], dc[4],
-        c3.x, c2.x, c1.x, c0.x
-    );
-    return Real5{1, c3.x, c2.x, c1.x, c0.x};
+    // auto dc = double_coeffs;
+    // printf(
+    //     "Doubles: {[1], %f, %f, %f, %f}\n2-doubs: {[1], %f, %f, %f, %f}\n",
+    //     dc[1], dc[2], dc[3], dc[4],
+    //     c3.x, c2.x, c1.x, c0.x
+    // );
+    return Real5{{1,0}, c3, c2, c1, c0};
 }
 
 //---------------------------------------------------------------------------//

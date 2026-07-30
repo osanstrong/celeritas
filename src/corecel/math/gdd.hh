@@ -32,7 +32,7 @@ double quick_two_sum(double a, double b, double &err) {
     return s;
 }
 
-inline CELER_FUNCTION
+inline constexpr CELER_FUNCTION
 double two_sum(double a, double b, double &err) {
 
     if ((a == 0.0) || (b == 0.0)) {
@@ -50,7 +50,7 @@ double two_sum(double a, double b, double &err) {
 
 //computes fl( a - b ) and err( a - b ), assumes |a| >= |b|
 
-inline CELER_FUNCTION
+inline constexpr CELER_FUNCTION
 double quick_two_diff(double a, double b, double &err) {
     if (a == b) {
         err = 0.0;
@@ -163,7 +163,7 @@ double dadd_rn(double a, double b) {
  * to avoid fused multiply-add operations*/
 inline constexpr CELER_FUNCTION __attribute__((optimize("fp-contract=off")))
 double dmul_rn(double a, double b) {
-    #if CELER_DEVICE_COMPILe
+    #if CELER_DEVICE_COMPILE
         return __dmul_rn(a, b);
     #else
         return a * b;
@@ -214,7 +214,7 @@ static const int n_dd_inv_fact = 15;
 using gdd_fact = Array<gdd_real, n_dd_inv_fact>;
 using gdd_four = Array<gdd_real, 4>;
 
-static constexpr gdd_fact dd_inv_fact{
+static CELER_CONSTEXPR_FUNCTION gdd_fact dd_inv_fact() { return gdd_fact{
         gdd_real{1.66666666666666657e-01, 9.25185853854297066e-18},
         gdd_real{4.16666666666666644e-02, 2.31296463463574266e-18},
         gdd_real{8.33333333333333322e-03, 1.15648231731787138e-19},
@@ -231,20 +231,21 @@ static constexpr gdd_fact dd_inv_fact{
         gdd_real{4.77947733238738525e-14, 4.39920548583408126e-31},
         gdd_real{2.81145725434552060e-15, 1.65088427308614326e-31}
     };
-
-static constexpr gdd_four d_dd_sin_table{
+}
+static CELER_CONSTEXPR_FUNCTION gdd_four d_dd_sin_table() { return gdd_four{
         gdd_real{1.950903220161282758e-01, -7.991079068461731263e-18},
         gdd_real{3.826834323650897818e-01, -1.005077269646158761e-17},
         gdd_real{5.555702330196021776e-01, 4.709410940561676821e-17},
         gdd_real{7.071067811865475727e-01, -4.833646656726456726e-17}
     };
-
-static constexpr gdd_four d_dd_cos_table{
+}
+static CELER_CONSTEXPR_FUNCTION gdd_four d_dd_cos_table() { return gdd_four{
         gdd_real{9.807852804032304306e-01, 1.854693999782500573e-17},
         gdd_real{9.238795325112867385e-01, 1.764504708433667706e-17},
         gdd_real{8.314696123025452357e-01, 1.407385698472802389e-18},
         gdd_real{7.071067811865475727e-01, -4.833646656726456726e-17}
     };
+}
 /**
  * arithmetic operators
  * comparison
@@ -710,7 +711,7 @@ gdd_real sin_taylor(const gdd_real &a) {
     r = a;
     do {
         r = r*x;
-        t = r * dd_inv_fact[i];
+        t = r * dd_inv_fact()[i];
         s = s + t;
         i += 2;
     } while (i < n_dd_inv_fact && std::fabs(to_double(t)) > thresh);
@@ -733,7 +734,7 @@ gdd_real cos_taylor(const gdd_real &a) {
     s = 1.0 + mul_pwr2(r, 0.5);
     do {
         r = r*x;
-        t = r * dd_inv_fact[i];
+        t = r * dd_inv_fact()[i];
         s = s + t;
         i += 2;
     } while (i < n_dd_inv_fact && std::fabs(to_double(t)) > thresh);
@@ -884,8 +885,8 @@ gdd_real cos(const gdd_real &a) {
 
     gdd_real sin_t, cos_t;
     sincos_taylor(t, sin_t, cos_t);
-    gdd_real u = d_dd_cos_table[abs_k - 1];
-    gdd_real v = d_dd_sin_table[abs_k - 1];
+    gdd_real u = d_dd_cos_table()[abs_k - 1];
+    gdd_real v = d_dd_sin_table()[abs_k - 1];
 
     if (j == 0) {
         if (k > 0) {
@@ -963,8 +964,8 @@ void sincos(const gdd_real &a, gdd_real &sin_a, gdd_real &cos_a) {
         s = sin_t;
         c = cos_t;
     } else {
-        gdd_real u = d_dd_cos_table[abs_k - 1];
-        gdd_real v = d_dd_sin_table[abs_k - 1];
+        gdd_real u = d_dd_cos_table()[abs_k - 1];
+        gdd_real v = d_dd_sin_table()[abs_k - 1];
 
         if (k > 0) {
             s = u * sin_t + v * cos_t;

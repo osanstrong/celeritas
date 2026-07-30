@@ -320,7 +320,9 @@ CELER_FUNCTION auto DDFerrariSolver::real_roots_normalized_cubic(
     using namespace celeritas::literals;
 
     constexpr gdd_real half = gdd_real{0.5, 0};
-    constexpr gdd_real third = gdd_real{1, 0} / gdd_real{3, 0};
+    // Equivalent to make_gdd(1) / make_gdd(3), but constexpr
+    // (division uses cuda operators when compiled for nvidia)
+    constexpr gdd_real third = gdd_real{0x1.5555555555555p-2, 0x1.5555555555555p-56};
     gdd_real third_b = b * third;
 
     // Intermediate values
