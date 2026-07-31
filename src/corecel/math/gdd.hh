@@ -98,19 +98,19 @@ double two_diff(double a, double b, double &err) {
 
 inline constexpr CELER_FUNCTION
 void split(double a, double &hi, double &lo) {
-    double temp = 0;
-    if (a > _GQD_SPLIT_THRESH || a < -_GQD_SPLIT_THRESH) {
-        a *= 3.7252902984619140625e-09; // 2^-28
-        temp = _GQD_SPLITTER * a;
+    // double temp = 0;
+    // if (a > _GQD_SPLIT_THRESH || a < -_GQD_SPLIT_THRESH) {
+    //     a *= 3.7252902984619140625e-09; // 2^-28
+    //     temp = _GQD_SPLITTER * a;
+    //     hi = temp - (temp - a);
+    //     lo = a - hi;
+    //     hi *= 268435456.0; // 2^28
+    //     lo *= 268435456.0; // 2^28
+    // } else {
+        double temp = _GQD_SPLITTER * a;
         hi = temp - (temp - a);
         lo = a - hi;
-        hi *= 268435456.0; // 2^28
-        lo *= 268435456.0; // 2^28
-    } else {
-        temp = _GQD_SPLITTER * a;
-        hi = temp - (temp - a);
-        lo = a - hi;
-    }
+    // }
 }
 
 /* Computes fl(a*b) and err(a*b). */
