@@ -14,6 +14,9 @@ namespace gdd {
 #define _GQD_SPLITTER            (134217729.0)                   // = 2^27 + 1
 #define _GQD_SPLIT_THRESH        (6.69692879491417e+299)         // = 2^996
 
+// #define _GQD_PATH_ALERT(original, replaced) printf("Marked path taken in %s\n - Uses %e instead of %e\n - Inputs; %e, %e\n", __FUNCTION__, replaced, original, a, b);
+// #define _GQD_PATH_ALERT(original, replaced) printf("Marked path taken in %s\n - Uses %e instead of %e       - Inputs; %e, %e\n", __FUNCTION__, replaced, original, a, b);
+
 /****************Basic Funcitons *********************/
 
 //computs fl( a + b ) and err( a + b ), assumes |a| > |b|
@@ -21,8 +24,11 @@ namespace gdd {
 inline constexpr CELER_FUNCTION
 double quick_two_sum(double a, double b, double &err) {
 
-    // if (b == 0.0) {
+    // if (b == 0.0) { // NOTE: Short-circuit does not affect answer
     //     err = 0.0;
+
+    //     double s = a + b;
+    //     _GQD_PATH_ALERT((b - (s - a)), 0.0)
     //     return (a + b);
     // }
 
@@ -36,9 +42,12 @@ inline constexpr CELER_FUNCTION
 double two_sum(double a, double b, double &err) {
 
     // if ((a == 0.0) || (b == 0.0)) {
+    //     double s = a + b; 
+    //     double bb = s - a;
+    //     _GQD_PATH_ALERT(((a - (s - bb)) + (b - bb)), 0.0)
     //     err = 0.0;
     //     return (a + b);
-    // }
+    // } // NOTE: Short circuit does not affect answer
 
     double s = a + b;
     double bb = s - a;
@@ -53,9 +62,11 @@ double two_sum(double a, double b, double &err) {
 inline constexpr CELER_FUNCTION
 double quick_two_diff(double a, double b, double &err) {
     // if (a == b) {
+    //     double s = a + b;
+    //     _GQD_PATH_ALERT(((a - s) - b), 0.0)
     //     err = 0.0;
     //     return 0.0;
-    // }
+    // } // NOTE: Short circuit does not affect answer
 
     /*
     if(fabs((a-b)/a) < GPU_D_EPS) {
@@ -75,9 +86,12 @@ double quick_two_diff(double a, double b, double &err) {
 inline constexpr CELER_FUNCTION
 double two_diff(double a, double b, double &err) {
     // if (a == b) {
+    //     double s = a - b;
+    //     double bb = s - a;
+    //     _GQD_PATH_ALERT(((a - (s - bb)) - (b + bb)), 0.0)
     //     err = 0.0;
     //     return 0.0;
-    // }
+    // } // NOTE: Short circuit does not affect answer
 
     double s = a - b;
 
@@ -100,16 +114,17 @@ inline constexpr CELER_FUNCTION
 void split(double a, double &hi, double &lo) {
     // double temp = 0;
     // if (a > _GQD_SPLIT_THRESH || a < -_GQD_SPLIT_THRESH) {
+    //     // NOTE: This branch seems untaken in typical Celeritas
     //     a *= 3.7252902984619140625e-09; // 2^-28
     //     temp = _GQD_SPLITTER * a;
     //     hi = temp - (temp - a);
-    //     lo = a - hi;
+    //     lo = a - hi; printf("And so the split became, itself, split.\n");
     //     hi *= 268435456.0; // 2^28
     //     lo *= 268435456.0; // 2^28
     // } else {
-        double temp = _GQD_SPLITTER * a;
-        hi = temp - (temp - a);
-        lo = a - hi;
+    double temp = _GQD_SPLITTER * a;
+    hi = temp - (temp - a);
+    lo = a - hi;
     // }
 }
 
