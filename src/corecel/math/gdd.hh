@@ -28,7 +28,7 @@ double quick_two_sum(double a, double b, double &err) {
 
     double s = a + b;
     err = b - (s - a);
-
+    // printf("The forbidden path began with ice magic.\n");
     return s;
 }
 
